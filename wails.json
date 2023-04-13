@@ -1,0 +1,13 @@
+{
+  "$schema": "https://wails.io/schemas/config.v2.json",
+  "name": "ExcelMate",
+  "outputfilename": "ExcelMate",
+  "frontend:install": "npm install",
+  "frontend:build": "npm run build",
+  "frontend:dev:watcher": "npm run dev",
+  "frontend:dev:serverUrl": "auto",
+  "author": {
+    "name": "DESKTOP-RKMKLHA\\owner",
+    "email": "2825873215@QQ.COM"
+  }
+}
