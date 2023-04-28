@@ -1,0 +1,162 @@
+package main
+
+import (
+	"encoding/csv"
+	"encoding/json"
+	"fmt"
+	"os"
+	"os/user"
+	"path/filepath"
+	"strings"
+
+	"github.com/pkg/errors"
+	"github.com/xuri/excelize/v2"
+	"golang.org/x/text/transform"
+)
+
+type StoreSettings struct {
+	ConfigFile string `json:"config_file"`
+	ExcelFile  string `json:"excel_file"`
+}
+
+// storeConfig 与前端数据格式同步，用于验证 config 数据格式是否正确
+type storeConfig struct {
+	Current string `json:"current"`
+	Files   []struct {
+		Id   string `json:"id"`
+		Name string `json:"name"`
+		List []struct {
+			Condition string `json:"condition"`
+			Template  string `json:"template"`
+			Color     string `json:"color"`
+		} `json:"list"`
+	}
+}
+
+func (a *App) ReadSettings() (*StoreSettings, error) {
+	path, err := a.createHomeDir()
+	if err != nil {
+		return nil, err
+	}
+
+	b, err := os.ReadFile(path + string(filepath.Separator) + "settings.json")
+	if err != nil || len(b) == 0 {
+		a.StoreSettings.ConfigFile = path + string(filepath.Separator) + "config.json"
+		a.saveSettings()
+		return &a.StoreSettings, nil
+	}
+
+	var setttings StoreSettings
+	err = json.Unmarshal(b, &setttings)
+	if err != nil {
+		return nil, err
+	}
+
+	a.StoreSettings = setttings
+	return &a.StoreSettings, nil
+}
+
+func (a *App) ReadExcel(path string) ([][]string, error) {
+	if path == "" {
+		settings, err := a.ReadSettings()
+		if err != nil {
+			return nil, err
+		}
+		path = settings.ExcelFile
+	}
+	file, err := os.OpenFile(path, os.O_RDONLY, 0755)
+	if err != nil {
+		return nil, err
+	}
+	ext := strings.ToLower(filepath.Ext(path))
+
+	if ext == ".csv" {
+		e, _, _, err := a.determineEncodingUtf8OrGBK(file)
+		if err != nil {
+			return nil, err
+		}
+
+		file.Seek(0, 0)
+		r := transform.NewReader(file, e.NewDecoder())
+		csvReader := csv.NewReader(r)
+
+		csvReader.FieldsPerRecord = -1
+
+		return csvReader.ReadAll()
+	}
+
+	f, err := excelize.OpenReader(file)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		// Close the spreadsheet.
+		if err := f.Close(); err != nil {
+			fmt.Println(err)
+		}
+	}()
+	// Get all the rows in the Sheet1.
+	return f.GetRows(f.GetSheetName(0))
+
+}
+
+func (a *App) SaveConfig(data string) error {
+	settings, err := a.ReadSettings()
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(settings.ConfigFile, []byte(data), 0755)
+}
+
+func (a *App) ReadConfig(path string) (string, error) {
+	if path == "" {
+		settings, err := a.ReadSettings()
+		if err != nil {
+			return "", err
+		}
+		path = settings.ConfigFile
+	}
+
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return "", errors.Wrapf(err, "path:%v", path)
+	}
+
+	var conf storeConfig
+	if len(b) == 0 {
+		return "", nil
+	}
+
+	err = json.Unmarshal(b, &conf)
+	if err != nil {
+		fmt.Println("config file:", string(b), path)
+		return "", errors.Wrap(err, "Config file exception")
+	}
+	return string(b), nil
+}
+
+func (a *App) createHomeDir() (string, error) {
+	u, err := user.Current()
+	if err != nil {
+		return "", err
+	}
+
+	path := u.HomeDir + string(filepath.Separator) + a.DataDirName
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		err = os.MkdirAll(path, 0755)
+		if err != nil {
+			return "", err
+		}
+	}
+	return path, nil
+}
+
+func (a *App) saveSettings() error {
+	path, err := a.createHomeDir()
+	if err != nil {
+		return err
+	}
+
+	b, _ := json.MarshalIndent(a.StoreSettings, "", "  ")
+	return os.WriteFile(path+string(filepath.Separator)+"settings.json", b, 0755)
+}

@@ -13,13 +13,15 @@ var assets embed.FS
 
 func main() {
 	// Create an instance of the app structure
-	app := NewApp()
+	app := NewApp("ExcelMate")
 
 	// Create application with options
 	err := wails.Run(&options.App{
-		Title:  "ExcelMate",
-		Width:  1024,
-		Height: 768,
+		Title:     "ExcelMate",
+		Width:     1024,
+		Height:    768,
+		MinWidth:  1024,
+		MinHeight: 500,
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
