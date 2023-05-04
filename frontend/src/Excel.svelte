@@ -37,7 +37,7 @@
         }
         let outputTmp = [];
         for (let i = 0; i < excelData.length; i++) {
-            excelData[i].color = "border-s-transparent";
+            excelData[i].color = "";
             for (let j = 0; j < conf.length; j++) {
                 let res = conf[j];
                 try {
@@ -51,16 +51,22 @@
                                 excelData[i],
                                 res.template
                             );
-                            outputTmp.push(output);
+                            outputTmp.push({
+                                config_index: j,
+                                text: output,
+                            });
                         }
                         break;
                     }
                 } catch (e) {
-                    // console.log(e);
+                    console.log(e);
                 }
             }
         }
-        outputData.set(outputTmp);
+        outputData.update((r) => {
+            r.list = outputTmp;
+            return r;
+        });
     }
 
     // 选择excel文件
@@ -68,7 +74,6 @@
         let data;
         OpenExcelFile()
             .then((res) => {
-                console.log("res", res);
                 let tmp = [];
                 if (res.data && res.path != "") {
                     res.data.forEach((v) => {
@@ -102,19 +107,18 @@
         return {};
     }
 
-    excelStore.subscribe((r) => {
-        excelData = r;
-        updateExcelColor(config);
-    });
-
     configData.subscribe((v) => {
-        console.log("excel configData.subscribe", v);
         let current = getCurrentConfig(v);
         config = current && current.list ? current.list : [];
         updateExcelColor(config);
     });
 
     settingsData.subscribe((r) => (basename = fileBasename(r.excel_file)));
+
+    excelStore.subscribe((r) => {
+        excelData = r;
+        updateExcelColor(config);
+    });
 </script>
 
 {#if excelData.length == 0}
@@ -162,7 +166,10 @@
         <tbody>
             {#each excelData as rows}
                 <tr
-                    class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-l-4 {rows.color}"
+                    class="bg-white border-b dark:bg-gray-800 dark:border-r-gray-700 dark:border-y-gray-700 border-l-4 border-l-transparent"
+                    style="border-left-color:{rows.color != ''
+                        ? rows.color
+                        : 'transparent'}"
                 >
                     {#each rows.data as r}
                         <td class="px-6 py-4">{r}</td>

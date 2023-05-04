@@ -1,5 +1,22 @@
 import { writable } from 'svelte/store';
-import { SaveConfig, ReadExcel, DialogError, ReadConfig, ReadSettings } from "../../wailsjs/go/main/App";
+import { ReadExcel, DialogError, ReadConfig, ReadSettings } from "../../wailsjs/go/main/App";
+
+export const allColor = [
+    "rgb(99 102 241)",
+    "rgb(180 83 9)",
+    "rgb(134 239 172)",
+    "rgb(15 118 110)",
+    "rgb(29 78 216)",
+    "rgb(216 180 254)",
+    "rgb(112 26 117)",
+    "rgb(157 23 77)",
+    "rgb(217 119 6)",
+    "rgb(250 204 21)",
+    "rgb(239 68 68)",
+    "#f08080",
+    "#ff00ff",
+    "rgb(103 232 249)",
+];
 
 export const configData = writable({
     current: "default",
@@ -11,7 +28,7 @@ export const configData = writable({
 
                 condition: "",
                 template: "{{.A}}",
-                color: "border-s-indigo-500"
+                color: allColor[0]
             }]
         }
     ]
@@ -70,5 +87,9 @@ export const settingsData = writable({
 });
 
 // 模板匹配数据的结果
-export const outputData = writable([]);
+export const outputData = writable({
+    config_index: -1, // 仅展示对应条件的结果, -1 代表所有
+    list: []
+});
+
 

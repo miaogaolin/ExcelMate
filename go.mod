@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/Masterminds/sprig/v3 v3.2.3
-	github.com/miaogaolin/condition v0.0.0-20230427090027-15e0406d0302
+	github.com/antonmedv/expr v1.12.5
 	github.com/pkg/errors v0.9.1
 	github.com/wailsapp/wails/v2 v2.4.1
 	github.com/xuri/excelize/v2 v2.7.1
@@ -15,7 +15,6 @@ require (
 require (
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver/v3 v3.2.0 // indirect
-	github.com/antlr/antlr4/runtime/Go/antlr/v4 v4.0.0-20221202181307-76fa05c21b12 // indirect
 	github.com/bep/debounce v1.2.1 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/google/uuid v1.1.2 // indirect

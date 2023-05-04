@@ -5,13 +5,13 @@
     $: itemIndex = 0;
 </script>
 
-<div class="bg-slate-100 flex-initial w-12 h-full text-center">
+<div class="bg-slate-100 flex-initial w-12 h-full text-center dark:bg-gray-900">
     <!-- svelte-ignore a11y-click-events-have-key-events -->
     <svg
         on:click={() => (itemIndex = 0)}
         class:opacity-100={itemIndex == 0}
         class:opacity-40={itemIndex != 0}
-        class="w-full my-2 hover:opacity-100 hover:cursor-pointer"
+        class="w-full my-2 hover:opacity-40 hover:cursor-pointer"
         viewBox="0 0 1024 1024"
         version="1.1"
         xmlns="http://www.w3.org/2000/svg"
@@ -43,13 +43,13 @@
     >
 </div>
 <div
-    class="excel-container h-full flex-1 bg-white overflow-auto px-2"
+    class="excel-container h-full flex-1 bg-white overflow-auto dark:bg-gray-800 px-2 box-border"
     class:hidden={itemIndex != 0}
 >
     <Excel />
 </div>
 <div
-    class="h-full flex-1 bg-white overflow-auto px-2"
+    class="h-full flex-1 bg-white overflow-auto dark:bg-gray-800 px-2 box-border"
     class:hidden={itemIndex != 1}
 >
     <Settings />

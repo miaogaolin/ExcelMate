@@ -1,8 +1,8 @@
 <script>
     import { Validate, SaveConfig } from "../wailsjs/go/main/App";
-    import { configData } from "./lib/store.js";
+    import { configData, allColor, outputData } from "./lib/store.js";
     import { getUuid, selectText } from "./lib/utils.js";
-    import { afterUpdate } from "svelte";
+    import Textarea from "./component/Textarea.svelte";
 
     // 当前选择的配置文件
     let currentConfig;
@@ -11,44 +11,52 @@
     // 已使用的颜色
     let usedColor = [];
     // 条件异常
-    $: conditionError = {};
+    let conditionError = {};
     // 是否展示列表
-    $: isList = false;
+    let isList = false;
+    // 输出结果展示的索引
+    let outputDataIndex = -1;
+    $: {
+        outputData.update((r) => {
+            r.config_index = outputDataIndex;
+            return r;
+        });
+    }
 
-    const allColor = [
-        "border-s-indigo-500",
-        "border-s-amber-900",
-        "border-s-green-300",
-        "border-s-teal-700",
-        "border-s-sky-600",
-        "border-s-blue-500",
-        "border-s-indigo-900",
-        "border-s-purple-400",
-        "border-s-fuchsia-800",
-        "border-s-pink-950",
-        "border-s-orange-800",
-        "border-s-amber-500",
-        "border-s-yellow-800",
-    ];
+    let configTextareas = [];
 
-    function updateConfig(index, condition, template) {
+    $: console.log("configTextareas", configTextareas);
+
+    function updateConfig(index, conditionEle, templateEle) {
+        let condition, template;
+
+        if (conditionEle) {
+            condition = conditionEle.target["value"].trim();
+        }
+
+        if (templateEle) {
+            template = templateEle.target["value"].trim();
+        }
+
+        if (
+            (condition != undefined &&
+                currentConfig.list[index].condition == condition) ||
+            (template != undefined &&
+                currentConfig.list[index].template == template)
+        ) {
+            return;
+        }
+
         configData.update((all) => {
             let current = getCurrentConfig(all);
             let list = current.list;
             if (index < list.length) {
                 let d = list[index];
                 if (condition != undefined) {
-                    if (d.condition == condition) {
-                        return all;
-                    }
-
                     d.condition = condition;
                 }
 
                 if (template != undefined) {
-                    if (d.template == template) {
-                        return all;
-                    }
                     d.template = template;
                 }
                 list[index] = d;
@@ -61,11 +69,19 @@
 
     function addConditionAndTemplate() {
         configData.update((all) => {
+            let color = getRandomColor();
+            for (let i = 0; i < allColor.length; i++) {
+                if (!usedColor.includes(allColor[i])) {
+                    color = allColor[i];
+                    break;
+                }
+            }
+
             let current = getCurrentConfig(all);
             current.list.push({
                 condition: "",
                 template: "",
-                color: generateBorderColor(),
+                color: color,
             });
             saveConfigData(all);
             return all;
@@ -85,16 +101,6 @@
         });
     }
 
-    function generateBorderColor() {
-        for (let i = 0; i < allColor.length; i++) {
-            let c = allColor[i];
-            if (usedColor.includes(c)) {
-                continue;
-            }
-            return c;
-        }
-        return "border-[" + getRandomColor() + "]";
-    }
     function getRandomColor() {
         // 随机生成 RGB 值
         const r = Math.floor(Math.random() * 256);
@@ -127,7 +133,7 @@
                 {
                     condition: "",
                     template: "{{.A}}",
-                    color: "border-s-indigo-500",
+                    color: allColor[0],
                 },
             ],
         };
@@ -159,29 +165,23 @@
         });
     }
 
-    function textareaAutoHeight(e) {
-        let target = e;
-        if (e.target) {
-            target = e.target;
-        }
-
-        target.style.height = "auto";
-        target.style.height = `${target.scrollHeight}px`;
-    }
-
     function validateCondition(condition, index) {
         condition = condition.trim();
         if (condition == "") {
             return;
         }
+        let isOk = false;
         // 单纯验证语法
         Validate("", condition)
             .then(() => {
                 conditionError[index] = "";
+                isOk = true;
             })
             .catch((e) => {
                 conditionError[index] = e;
+                isOk = false;
             });
+        return isOk;
     }
 
     function exchangePosition(i, j) {
@@ -194,32 +194,25 @@
             let tmp = current.list[i];
             current.list[i] = current.list[j];
             current.list[j] = tmp;
+            saveConfigData(all);
             return all;
         });
     }
-
-    afterUpdate(() => {
-        // 输入框自适应高度
-        let all = document.querySelectorAll(".config-container textarea");
-        all.forEach((e) => {
-            textareaAutoHeight(e);
-        });
-    });
 
     configData.subscribe((v) => {
         console.log("configData.subscribe", v);
         allConfig = v;
         currentConfig = getCurrentConfig(v);
         let tmp = [];
+        configTextareas = [];
         currentConfig.list.forEach((r) => {
             tmp.push(r.color);
+            configTextareas.push({
+                condition: "",
+                template: "",
+            });
         });
         usedColor = tmp;
-
-        let textarea = document.querySelector("textarea");
-        if (textarea) {
-            textareaAutoHeight(textarea);
-        }
     });
 
     // 保存配置数据到本地
@@ -270,14 +263,22 @@
             return all;
         });
     }
+
+    function onlyShowOutput(i) {
+        if (outputDataIndex == i) {
+            outputDataIndex = -1;
+            return;
+        }
+        outputDataIndex = i;
+    }
 </script>
 
 <div
-    class="condition-container w-full h-1/2 bg-slate-100 overflow-y-auto border-s-slate-100 border-s"
+    class="condition-container w-full h-1/2 bg-slate-100 overflow-y-auto border-s-slate-100 dark:border-s-gray-900 border-s dark:bg-gray-900"
 >
     <!-- 编辑配置 -->
     <div class:hidden={isList}>
-        <div class="bg-white flex items-center">
+        <div class="bg-white dark:bg-gray-900 flex items-center">
             <!-- svelte-ignore a11y-click-events-have-key-events -->
             {#if allConfig.current != ""}
                 <span
@@ -285,7 +286,7 @@
                     on:click={(e) => selectText(e.target)}
                     on:focus={(e) => selectText(e.target)}
                     on:focusout={updateConfigName}
-                    class="text-xs p-2 font-medium bg-slate-100 focus:outline-none border-2 border-slate-100 hover:border-slate-300 focus:border-slate-300"
+                    class="text-xs p-2 font-medium bg-slate-100 dark:text-gray-400 dark:bg-gray-900 dark:border-gray-900 dark:hover:border-gray-700 dark:focus:border-gray-700 focus:outline-none border-2 border-slate-100 hover:border-slate-300 focus:border-slate-300"
                     contenteditable="true"
                 >
                     {currentConfig.name}
@@ -327,26 +328,23 @@
         <div class="h-2" />
         {#each currentConfig.list as r, i}
             <div
-                class="config-container {r.color} border-l-2 overflow-hidden pr-6"
+                style="border-left-color:{r.color}"
+                class="config-container border-l-4 overflow-hidden pr-6"
             >
-                <div class="float-left w-full">
-                    <textarea
-                        id="condition"
-                        class="placeholder:italic placeholder:text-slate-400 block bg-white w-full border border-slate-300 rounded-md py-2 pl-2.5 pr-3 shadow-sm focus:outline-none focus:ring-1 sm:text-sm resize-none overflow-hidden"
+                <div
+                    class="float-left w-full dark:bg-gray-800 {i ===
+                    outputDataIndex
+                        ? 'bg-gray-300'
+                        : 'bg-white'}"
+                >
+                    <Textarea
+                        class="tracking-widest dark:font-light placeholder:italic placeholder:text-slate-400 block bg-transparent  dark:text-gray-200 dark:border-gray-700 w-full border border-slate-300 rounded-md py-2 pl-2.5 pr-3 focus:outline-none focus:ring-1 sm:text-sm resize-none overflow-hidden"
+                        value={r.condition}
                         rows="1"
                         placeholder="The conditions for filtering Excel."
-                        value={r.condition}
-                        on:keyup={(e) => {
-                            // 如果按下的是上下箭头键
-                            if (e.key === "ArrowUp" || e.key === "ArrowDown") {
-                                // 阻止默认行为，防止滚动
-                                e.preventDefault();
-                            }
-                            updateConfig(i, e.target["value"], undefined);
-                        }}
+                        on:keyup={(e) => updateConfig(i, e, undefined)}
                         on:change={(e) =>
                             validateCondition(e.target["value"], i)}
-                        on:input={textareaAutoHeight}
                     />
                     {#if r.condition != "" && conditionError[i] && conditionError[i] != ""}
                         <div class="bg-red-200 text-xs p-2 my-2">
@@ -354,14 +352,12 @@
                         </div>
                     {/if}
 
-                    <textarea
+                    <Textarea
                         rows="4"
-                        class="placeholder:italic placeholder:text-slate-400 block bg-white w-full border border-slate-300 rounded-md py-2 pl-2.5 pr-3 shadow-sm focus:outline-none focus:ring-1 sm:text-sm resize-none overflow-hidden"
+                        class="tracking-widest dark:font-light dark:text-gray-200 dark:border-gray-700 placeholder:italic placeholder:text-slate-400 block w-full border border-slate-300 rounded-md py-2 pl-2.5 pr-3 focus:outline-none focus:ring-1 sm:text-sm resize-none overflow-hidden bg-transparent"
                         placeholder="The template content that matches the conditions successfully."
                         value={r.template}
-                        on:change={(e) =>
-                            updateConfig(i, undefined, e.target["value"])}
-                        on:input={textareaAutoHeight}
+                        on:change={(e) => updateConfig(i, undefined, e)}
                     />
                 </div>
                 <div class="float-right -mr-6 w-6 text-center">
@@ -395,6 +391,41 @@
                             fill="#515151"
                         /></svg
                     >
+
+                    {#if outputDataIndex == i}
+                        <!-- svelte-ignore a11y-click-events-have-key-events -->
+                        <svg
+                            class="hover:cursor-pointer hover:opacity-100 opacity-60 mx-auto mb-1"
+                            viewBox="0 0 1024 1024"
+                            version="1.1"
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="22"
+                            height="22"
+                            on:click={() => onlyShowOutput(i)}
+                            ><path
+                                d="M942.2 486.2C847.4 286.5 704.1 186 512 186c-192.2 0-335.4 100.5-430.2 300.3-7.7 16.2-7.7 35.2 0 51.5C176.6 737.5 319.9 838 512 838c192.2 0 335.4-100.5 430.2-300.3 7.7-16.2 7.7-35 0-51.5zM512 766c-161.3 0-279.4-81.8-362.7-254C232.6 339.8 350.7 258 512 258c161.3 0 279.4 81.8 362.7 254C791.5 684.2 673.4 766 512 766z"
+                                fill="#515151"
+                            /><path
+                                d="M508 336c-97.2 0-176 78.8-176 176s78.8 176 176 176 176-78.8 176-176-78.8-176-176-176z m0 288c-61.9 0-112-50.1-112-112s50.1-112 112-112 112 50.1 112 112-50.1 112-112 112z"
+                                fill="#515151"
+                            /></svg
+                        >
+                    {:else}
+                        <!-- svelte-ignore a11y-click-events-have-key-events -->
+                        <svg
+                            class="hover:cursor-pointer hover:opacity-100 opacity-60 mx-auto mb-1"
+                            viewBox="0 0 1024 1024"
+                            version="1.1"
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="22"
+                            height="22"
+                            on:click={() => onlyShowOutput(i)}
+                            ><path
+                                d="M93.866667 322.773333a8.533333 8.533333 0 0 1 6.613333 3.114667c5.589333 6.848 10.261333 12.373333 14.058667 16.64 97.664 109.056 239.552 177.706667 397.482666 177.706667 162.752 0 308.48-72.917333 406.314667-187.84 1.493333-1.792 3.242667-3.882667 5.184-6.272a8.533333 8.533333 0 0 1 15.146667 5.376v9.813333l0.021333 8.32v51.754667a8.533333 8.533333 0 0 1-2.517333 6.037333 599.893333 599.893333 0 0 1-99.584 81.002667l82.474666 98.261333a8.533333 8.533333 0 0 1-1.066666 12.010667l-35.946667 30.165333a8.533333 8.533333 0 0 1-12.010667-1.045333l-89.813333-107.050667a593.045333 593.045333 0 0 1-145.450667 50.837333l44.074667 121.024a8.533333 8.533333 0 0 1-5.098667 10.944l-44.096 16.042667a8.533333 8.533333 0 0 1-10.944-5.098667l-48.448-133.098666a604.586667 604.586667 0 0 1-130.88-1.557334L390.4 714.517333a8.533333 8.533333 0 0 1-10.944 5.12l-44.096-16.064a8.533333 8.533333 0 0 1-5.12-10.944l45.184-124.096a593.066667 593.066667 0 0 1-131.584-47.744l-89.813333 107.029334a8.533333 8.533333 0 0 1-12.032 1.066666L106.026667 598.677333a8.533333 8.533333 0 0 1-1.066667-12.010666l82.474667-98.261334a599.872 599.872 0 0 1-80.981334-62.976c-4.352-4.032-10.56-10.026667-18.602666-18.005333A8.533333 8.533333 0 0 1 85.333333 401.386667v-70.101334c0-4.693333 3.84-8.533333 8.533334-8.533333z"
+                                fill="#515151"
+                            /></svg
+                        >
+                    {/if}
                     <!-- svelte-ignore a11y-click-events-have-key-events -->
                     <svg
                         on:click={() => deleteConditionAndTemplate(i)}
@@ -443,7 +474,9 @@
 
     <!-- 配置文件列表 -->
     <div class="w-full" class:hidden={!isList}>
-        <div class="bg-white flex items-center w-full">
+        <div
+            class="bg-white flex items-center w-full dark:text-gray-400 dark:bg-gray-900"
+        >
             <div>
                 <!-- svelte-ignore a11y-click-events-have-key-events -->
                 <svg
@@ -464,7 +497,7 @@
             </div>
             <span class="text-xs p-2">Select Config</span>
         </div>
-        <div class="bg-white w-full">
+        <div class="bg-white w-full dark:bg-gray-900">
             {#each allConfig.files as r}
                 <div class="flex w-full items-center">
                     {#if r.id == allConfig.current}
@@ -484,7 +517,7 @@
                                 selectConfig(r.id);
                             }}
                             type="button"
-                            class="block w-full cursor-pointer rounded-lg p-4 text-left transition duration-500 hover:bg-neutral-100 hover:text-neutral-500 focus:bg-neutral-100 focus:text-neutral-500 focus:ring-0 dark:hover:bg-neutral-600 dark:hover:text-neutral-200 dark:focus:bg-neutral-600 dark:focus:text-neutral-200"
+                            class="block w-full cursor-pointer rounded-lg p-4 text-left transition duration-500 hover:bg-neutral-100 hover:text-neutral-500 focus:bg-neutral-100 focus:text-neutral-500 focus:ring-0 dark:hover:bg-neutral-600 dark:hover:text-neutral-200 dark:focus:bg-neutral-600 dark:focus:text-neutral-200 dark:bg-gray-700 dark:text-gray-400"
                         >
                             {r.name}
                         </button>

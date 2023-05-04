@@ -1,16 +1,26 @@
 <script>
     import { outputData } from "./lib/store.js";
-    $: value = "";
+    let data = {};
+    let value = "";
 
+    function updateData(data) {
+        value = "";
+        data.list.forEach((v) => {
+            if (data.config_index >= 0 && data.config_index != v.config_index) {
+                return;
+            }
+            value += v.text + "\n";
+        });
+    }
     outputData.subscribe((v) => {
-        value = v.join("\n");
+        data = v;
+        updateData(data);
     });
 </script>
 
-<div class="result-container h-1/2 w-full bg-white">
+<div class="result-container h-1/2 w-full bg-white dark:bg-gray-900">
     <textarea
-        class="h-full placeholder:italic placeholder:text-slate-400 block bg-white w-full border border-slate-300 rounded-md py-2 pl-2.5 pr-3 shadow-sm focus:outline-none focus:ring-1 sm:text-sm"
-        placeholder="Result"
-        {value}
-    />
+        class="h-full placeholder:italic placeholder:text-slate-400 block bg-white w-full border border-slate-300 rounded-md py-2 pl-2.5 pr-3 shadow-sm focus:outline-none focus:ring-1 sm:text-sm dark:bg-gray-900 dark:text-gray-400 dark:border-gray-700 tracking-wider"
+        placeholder="Result">{value}</textarea
+    >
 </div>

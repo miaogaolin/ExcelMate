@@ -82,7 +82,8 @@ func (a *App) ReadExcel(path string) ([][]string, error) {
 
 		csvReader.FieldsPerRecord = -1
 
-		return csvReader.ReadAll()
+		data, err := csvReader.ReadAll()
+		return a.appendColumn(data), err
 	}
 
 	f, err := excelize.OpenReader(file)
@@ -96,7 +97,8 @@ func (a *App) ReadExcel(path string) ([][]string, error) {
 		}
 	}()
 	// Get all the rows in the Sheet1.
-	return f.GetRows(f.GetSheetName(0))
+	data, err := f.GetRows(f.GetSheetName(0))
+	return a.appendColumn(data), err
 
 }
 
@@ -129,7 +131,6 @@ func (a *App) ReadConfig(path string) (string, error) {
 
 	err = json.Unmarshal(b, &conf)
 	if err != nil {
-		fmt.Println("config file:", string(b), path)
 		return "", errors.Wrap(err, "Config file exception")
 	}
 	return string(b), nil
@@ -159,4 +160,24 @@ func (a *App) saveSettings() error {
 
 	b, _ := json.MarshalIndent(a.StoreSettings, "", "  ")
 	return os.WriteFile(path+string(filepath.Separator)+"settings.json", b, 0755)
+}
+
+func (a *App) appendColumn(data [][]string) [][]string {
+	maxColumn := 0
+	for _, v := range data {
+		if len(v) > maxColumn {
+			maxColumn = len(v)
+		}
+	}
+
+	for i, v := range data {
+		diff := maxColumn - len(v)
+
+		if diff > 0 {
+			diffData := make([]string, diff)
+			v = append(v, diffData...)
+			data[i] = v
+		}
+	}
+	return data
 }

@@ -13,7 +13,7 @@ import (
 	"strings"
 
 	"github.com/Masterminds/sprig/v3"
-	"github.com/miaogaolin/condition"
+	"github.com/antonmedv/expr"
 	"github.com/pkg/errors"
 	"golang.org/x/net/html/charset"
 	"golang.org/x/text/encoding"
@@ -48,7 +48,8 @@ func (a *App) Validate(data interface{}, conditionExpr string) (bool, error) {
 		return true, nil
 	}
 
-	c, err := condition.New(conditionExpr)
+
+	program, err := expr.Compile(conditionExpr, append(ExprOptions(), expr.AsBool())...)
 	if err != nil {
 		return false, err
 	}
@@ -57,12 +58,16 @@ func (a *App) Validate(data interface{}, conditionExpr string) (bool, error) {
 		return false, nil
 	}
 
-	// Evaluate expression passing data for $vars
-	r, err := c.Validate(rowData)
+	output, err := expr.Run(program, rowData)
 	if err != nil {
 		return false, err
 	}
-	return r, nil
+
+	if _, ok := output.(bool); !ok {
+		return false, errors.New("result type is bool")
+	}
+
+	return output.(bool), nil
 }
 
 // Template 使用模板渲染数据
@@ -91,7 +96,7 @@ func (a *App) getExcelRow(data interface{}) map[string]interface{} {
 	for i, v := range excelData {
 		val := fmt.Sprintf("%v", v)
 		key := fmt.Sprintf("%c", 'A'+i)
-		if num, err := a.GetMoneyNum(val); err == nil {
+		if num, err := a.getMoneyNum(val); err == nil {
 			rowData[key] = num
 		} else {
 			v = strings.TrimSpace(val)
@@ -116,7 +121,7 @@ func (a *App) determineEncodingUtf8OrGBK(r io.Reader) (e encoding.Encoding, name
 	return
 }
 
-func (a *App) GetMoneyNum(money string) (float64, error) {
+func (a *App) getMoneyNum(money string) (float64, error) {
 	money = strings.Trim(money, `"`)
 
 	var sign float64 = 1
