@@ -19,7 +19,9 @@
         target.style.height = "auto";
 
         let height = textarea.scrollHeight;
-        target.style.height = `${height}px`;
+        if (height > 0) {
+            target.style.height = `${height}px`;
+        }
     }
 
     $: autoResize(textarea);

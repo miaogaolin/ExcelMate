@@ -4,3 +4,5 @@ frontend/dist
 .history
 
 frontend/wailsjs
+
+build

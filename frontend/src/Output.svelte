@@ -18,9 +18,9 @@
     });
 </script>
 
-<div class="result-container h-1/2 w-full bg-white dark:bg-gray-900">
+<div class="result-container h-1/2 w-full dark:bg-gray-900">
     <textarea
-        class="h-full placeholder:italic placeholder:text-slate-400 block bg-white w-full border border-slate-300 rounded-md py-2 pl-2.5 pr-3 shadow-sm focus:outline-none focus:ring-1 sm:text-sm dark:bg-gray-900 dark:text-gray-400 dark:border-gray-700 tracking-wider"
+        class="h-full placeholder:italic placeholder:text-slate-400 block bg-white w-full border border-slate-300 py-2 pl-2.5 pr-3 outline-none sm:text-sm dark:bg-gray-900 dark:text-gray-400 dark:border-gray-700 tracking-wider bg-gray-200"
         placeholder="Result">{value}</textarea
     >
 </div>

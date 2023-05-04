@@ -278,7 +278,9 @@
 >
     <!-- 编辑配置 -->
     <div class:hidden={isList}>
-        <div class="bg-white dark:bg-gray-900 flex items-center">
+        <div
+            class="bg-white dark:bg-gray-900 flex items-center sticky top-0 z-50"
+        >
             <!-- svelte-ignore a11y-click-events-have-key-events -->
             {#if allConfig.current != ""}
                 <span
@@ -338,7 +340,7 @@
                         : 'bg-white'}"
                 >
                     <Textarea
-                        class="tracking-widest dark:font-light placeholder:italic placeholder:text-slate-400 block bg-transparent  dark:text-gray-200 dark:border-gray-700 w-full border border-slate-300 rounded-md py-2 pl-2.5 pr-3 focus:outline-none focus:ring-1 sm:text-sm resize-none overflow-hidden"
+                        class="tracking-widest dark:font-light placeholder:italic placeholder:text-slate-400 block bg-transparent  dark:text-gray-200 dark:border-gray-700 w-full border border-slate-300 py-2 pl-2.5 pr-3 focus:outline-none focus:ring-1 sm:text-sm resize-none overflow-hidden"
                         value={r.condition}
                         rows="1"
                         placeholder="The conditions for filtering Excel."
@@ -354,7 +356,7 @@
 
                     <Textarea
                         rows="4"
-                        class="tracking-widest dark:font-light dark:text-gray-200 dark:border-gray-700 placeholder:italic placeholder:text-slate-400 block w-full border border-slate-300 rounded-md py-2 pl-2.5 pr-3 focus:outline-none focus:ring-1 sm:text-sm resize-none overflow-hidden bg-transparent"
+                        class="tracking-widest dark:font-light dark:text-gray-200 dark:border-gray-700 placeholder:italic placeholder:text-slate-400 block w-full border border-slate-300 py-2 pl-2.5 pr-3 focus:outline-none focus:ring-1 sm:text-sm resize-none overflow-hidden bg-transparent"
                         placeholder="The template content that matches the conditions successfully."
                         value={r.template}
                         on:change={(e) => updateConfig(i, undefined, e)}

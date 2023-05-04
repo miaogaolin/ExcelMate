@@ -10,7 +10,7 @@
 <div class="flex h-full w-full fixed">
     <Tabs />
 
-    <div class="flex-initial h-full w-1/4 min-w-[350px]">
+    <div class="flex-initial h-full w-1/3 min-w-[400px]">
         <Config />
 
         <Output />
