@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/extrame/xls"
 	"github.com/pkg/errors"
 	"github.com/xuri/excelize/v2"
 	"golang.org/x/text/transform"
@@ -70,7 +71,8 @@ func (a *App) ReadExcel(path string) ([][]string, error) {
 	}
 	ext := strings.ToLower(filepath.Ext(path))
 
-	if ext == ".csv" {
+	switch ext {
+	case ".csv":
 		e, _, _, err := a.determineEncodingUtf8OrGBK(file)
 		if err != nil {
 			return nil, err
@@ -84,21 +86,47 @@ func (a *App) ReadExcel(path string) ([][]string, error) {
 
 		data, err := csvReader.ReadAll()
 		return a.appendColumn(data), err
-	}
-
-	f, err := excelize.OpenReader(file)
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
-		// Close the spreadsheet.
-		if err := f.Close(); err != nil {
-			fmt.Println(err)
+	case ".xls":
+		_, name, _, err := a.determineEncodingUtf8OrGBK(file)
+		if err != nil {
+			return nil, err
 		}
-	}()
-	// Get all the rows in the Sheet1.
-	data, err := f.GetRows(f.GetSheetName(0))
-	return a.appendColumn(data), err
+
+		file.Seek(0, 0)
+
+		workbook, err := xls.OpenReader(file, name)
+		if err != nil {
+			return nil, err
+		}
+
+		var data [][]string
+		if sheet1 := workbook.GetSheet(0); sheet1 != nil {
+			maxRow := sheet1.MaxRow
+			for i := 0; i < int(maxRow); i++ {
+				var rows []string
+				row := sheet1.Row(i)
+				for index := row.FirstCol(); index < row.LastCol(); index++ {
+					rows = append(rows, row.Col(index))
+				}
+				data = append(data, rows)
+			}
+		}
+		return a.appendColumn(data), err
+	default:
+		f, err := excelize.OpenReader(file)
+		if err != nil {
+			return nil, err
+		}
+		defer func() {
+			// Close the spreadsheet.
+			if err := f.Close(); err != nil {
+				fmt.Println(err)
+			}
+		}()
+		// Get all the rows in the Sheet1.
+		data, err := f.GetRows(f.GetSheetName(0))
+		return a.appendColumn(data), err
+	}
 
 }
 
@@ -177,6 +205,13 @@ func (a *App) appendColumn(data [][]string) [][]string {
 			diffData := make([]string, diff)
 			v = append(v, diffData...)
 			data[i] = v
+		}
+	}
+
+	a.exprEnv = make(map[string]interface{})
+	if len(data) > 0 {
+		for i := 0; i < maxColumn; i++ {
+			a.exprEnv[string(rune(i+65))] = data[0][i]
 		}
 	}
 	return data

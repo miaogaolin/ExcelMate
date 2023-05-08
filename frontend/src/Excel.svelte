@@ -5,6 +5,8 @@
         outputData,
         excelData as excelStore,
         settingsData,
+        conditionError,
+        templateError,
     } from "./lib/store.js";
     import { OpenExcelFile, DialogError } from "../wailsjs/go/main/App";
 
@@ -31,42 +33,53 @@
     let config = [];
 
     // 更新excel匹配的颜色，并且更新模板匹配的内容
-    async function updateExcelColor(conf) {
+    async function updateExcelColor(conf, abortSignal) {
         if (!excelData) {
             return;
         }
-        let outputTmp = [];
+        outputData.update((r) => {
+            r.list = [];
+            return r;
+        });
+
         for (let i = 0; i < excelData.length; i++) {
-            excelData[i].color = "";
-            for (let j = 0; j < conf.length; j++) {
-                let res = conf[j];
-                try {
-                    // 验证
-                    let r = await Validate(excelData[i], res.condition);
-                    if (r) {
-                        excelData[i].color = res.color;
-                        if (res.template.trim() != "") {
-                            // 模板渲染数据输出
-                            let output = await Template(
-                                excelData[i],
-                                res.template
-                            );
-                            outputTmp.push({
+            let rowData = excelData[i].data;
+            outputResult(rowData, conf, i);
+        }
+    }
+
+    async function outputResult(rowData, conf, i) {
+        excelData[i].color = "";
+        for (let j = 0; j < conf.length; j++) {
+            let res = conf[j];
+            try {
+                // 验证
+                let r = await Validate(rowData, res.condition);
+                if (r) {
+                    excelData[i].color = res.color;
+                    if (res.template.trim() != "") {
+                        // 模板渲染数据输出
+                        let output = await Template(rowData, res.template);
+                        $templateError[j] = "";
+                        outputData.update((r) => {
+                            r.list.push({
                                 config_index: j,
                                 text: output,
                             });
-                        }
-                        break;
+                            return r;
+                        });
                     }
-                } catch (e) {
-                    console.log(e);
+                    break;
                 }
+            } catch (e) {
+                if (e.toString().indexOf("template") !== -1) {
+                    if (!$templateError[j] || $templateError[j] == "") {
+                        $templateError[j] = e;
+                    }
+                }
+                break;
             }
         }
-        outputData.update((r) => {
-            r.list = outputTmp;
-            return r;
-        });
     }
 
     // 选择excel文件
@@ -108,6 +121,9 @@
     }
 
     configData.subscribe((v) => {
+        if (v.current == "") {
+            return;
+        }
         let current = getCurrentConfig(v);
         config = current && current.list ? current.list : [];
         updateExcelColor(config);

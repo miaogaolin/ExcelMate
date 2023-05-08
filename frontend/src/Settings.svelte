@@ -14,7 +14,7 @@
                 if (p[0] != "") {
                     path = p[0];
                     // 渲染读取的配置
-                    configData.set(JSON.parse(p[1]));
+                    configData.saveSet(JSON.parse(p[1]));
                 }
             })
             .catch((e) => {

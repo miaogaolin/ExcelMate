@@ -16,7 +16,7 @@ func (a *App) OpenExcelFile() (*excelStat, error) {
 	path, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
 		Title: "Select excel file",
 		Filters: []runtime.FileFilter{
-			{DisplayName: "Excel Files", Pattern: "*.csv;*.xlam;*xlsm;*xlsx;*xltx"},
+			{DisplayName: "Excel Files", Pattern: "*.csv;*.xlam;*.xlsm;*.xlsx;*.xltx;*.xls"},
 		},
 	})
 	if err != nil {

@@ -1,5 +1,5 @@
 import { writable } from 'svelte/store';
-import { ReadExcel, DialogError, ReadConfig, ReadSettings } from "../../wailsjs/go/main/App";
+import { ReadExcel, DialogError, ReadConfig, ReadSettings, SaveConfig } from "../../wailsjs/go/main/App";
 
 export const allColor = [
     "rgb(99 102 241)",
@@ -18,7 +18,7 @@ export const allColor = [
     "rgb(103 232 249)",
 ];
 
-export const configData = writable({
+export const defaultConfigs = {
     current: "default",
     files: [
         {
@@ -32,8 +32,36 @@ export const configData = writable({
             }]
         }
     ]
-});
+};
 
+function configDataWritable() {
+    const { subscribe, set, update } = writable({
+        current: "",
+        files: []
+    });
+
+    return {
+        subscribe,
+        set,
+        saveUpdate: function (func) {
+            update((data) => {
+                data = func(data)
+                saveConfigData(data);
+                return data;
+            })
+        },
+        saveSet: function (data) {
+            saveConfigData(data);
+            set(data);
+        }
+    };
+}
+
+export const configData = configDataWritable();
+// 条件异常
+export const conditionError = writable({});
+// 模板异常
+export const templateError = writable({});
 
 export function initExcelData() {
     ReadExcel("").then(r => {
@@ -54,9 +82,11 @@ export function initExcelData() {
 export function initConfigData() {
     ReadConfig("")
         .then(r => {
+            console.log("init config", JSON.parse(r));
             if (r != "") {
-                console.log("init config", JSON.parse(r));
                 configData.set(JSON.parse(r));
+            } else {
+                configData.set(defaultConfigs);
             }
         })
         .catch((e) => {
@@ -92,4 +122,14 @@ export const outputData = writable({
     list: []
 });
 
+
+function saveConfigData(data) {
+    SaveConfig(JSON.stringify(data, null, 2))
+        .then(() => {
+            console.log("save config", data);
+        })
+        .catch((e) => {
+            console.log("save config", e);
+        });
+}
 

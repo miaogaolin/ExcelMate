@@ -14,6 +14,7 @@ import (
 
 	"github.com/Masterminds/sprig/v3"
 	"github.com/antonmedv/expr"
+	"github.com/antonmedv/expr/vm"
 	"github.com/pkg/errors"
 	"golang.org/x/net/html/charset"
 	"golang.org/x/text/encoding"
@@ -22,9 +23,12 @@ import (
 
 // App struct
 type App struct {
-	ctx           context.Context
-	DataDirName   string
-	StoreSettings StoreSettings
+	ctx              context.Context
+	DataDirName      string
+	StoreSettings    StoreSettings
+	conditionProgram map[string]interface{}
+	templateError    map[string]error
+	exprEnv          map[string]interface{}
 }
 
 type File struct {
@@ -35,7 +39,11 @@ type File struct {
 
 // NewApp creates a new App application struct
 func NewApp(dataDirName string) *App {
-	a := &App{DataDirName: dataDirName}
+	a := &App{
+		DataDirName:      dataDirName,
+		conditionProgram: make(map[string]interface{}),
+		templateError:    make(map[string]error),
+	}
 	return a
 }
 
@@ -48,17 +56,29 @@ func (a *App) Validate(data interface{}, conditionExpr string) (bool, error) {
 		return true, nil
 	}
 
-
-	program, err := expr.Compile(conditionExpr, append(ExprOptions(), expr.AsBool())...)
-	if err != nil {
-		return false, err
+	if _, ok := a.conditionProgram[conditionExpr]; !ok {
+		options := append(ExprOptions(), expr.AsBool())
+		// if v, ok := rowData["A"]; ok {
+		// 	options = append(options, expr.Env(v))
+		// }
+		program, err := expr.Compile(conditionExpr, options...)
+		if err != nil {
+			a.conditionProgram[conditionExpr] = err
+			return false, err
+		}
+		a.conditionProgram[conditionExpr] = program
 	}
 
 	if len(rowData) == 0 {
 		return false, nil
 	}
 
-	output, err := expr.Run(program, rowData)
+	val := a.conditionProgram[conditionExpr]
+	if err, ok := val.(error); ok {
+		return false, err
+	}
+
+	output, err := expr.Run(val.(*vm.Program), rowData)
 	if err != nil {
 		return false, err
 	}
@@ -70,26 +90,51 @@ func (a *App) Validate(data interface{}, conditionExpr string) (bool, error) {
 	return output.(bool), nil
 }
 
+func (a *App) ValidateExpr(conditionExpr string) (bool, error) {
+	// 没有条件代表，代表所有匹配
+	if conditionExpr == "" {
+		return true, nil
+	}
+
+	options := append(ExprOptions(), expr.AsBool())
+	if len(a.exprEnv) > 0 {
+		options = append(options, expr.Env(a.exprEnv))
+	}
+	_, err := expr.Compile(conditionExpr, options...)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
 // Template 使用模板渲染数据
 func (a *App) Template(data interface{}, tpl string) (string, error) {
 	rowData := a.getExcelRow(data)
 	if tpl != "" {
+		if err := a.templateError[tpl]; err != nil {
+			return "", errors.Wrap(err, "template")
+		}
+
 		res := bytes.NewBuffer(nil)
 		t, err :=
 			template.New("base").Funcs(sprig.FuncMap()).Parse(tpl)
 		if err != nil {
-			return "", err
+			a.templateError[tpl] = err
+			return "", errors.Wrap(err, "template")
 		}
 		err = t.Execute(res, rowData)
-		return res.String(), err
+		if err != nil {
+			return "", errors.Wrap(err, "template")
+		}
+		return res.String(), nil
 	}
 	return "", nil
 }
 
 func (a *App) getExcelRow(data interface{}) map[string]interface{} {
 	var excelData []interface{}
-	if v, ok := data.(map[string]interface{}); ok {
-		excelData = v["data"].([]interface{})
+	if v, ok := data.([]interface{}); ok {
+		excelData = v
 	}
 
 	rowData := make(map[string]interface{})
