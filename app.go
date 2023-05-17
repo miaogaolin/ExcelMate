@@ -14,6 +14,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/Masterminds/sprig/v3"
 	"github.com/antonmedv/expr"
@@ -29,7 +30,7 @@ type App struct {
 	ctx              context.Context
 	DataDirName      string
 	StoreSettings    StoreSettings
-	conditionProgram map[string]interface{}
+	conditionProgram sync.Map
 	templateError    map[string]error
 	exprEnv          map[string]interface{}
 }
@@ -43,9 +44,9 @@ type File struct {
 // NewApp creates a new App application struct
 func NewApp(dataDirName string) *App {
 	a := &App{
-		DataDirName:      dataDirName,
-		conditionProgram: make(map[string]interface{}),
-		templateError:    make(map[string]error),
+		DataDirName: dataDirName,
+		// conditionProgram: make(map[string]interface{}),
+		templateError: make(map[string]error),
 	}
 	return a
 }
@@ -59,29 +60,27 @@ func (a *App) Validate(data interface{}, conditionExpr string) (bool, error) {
 		return true, nil
 	}
 
-	if _, ok := a.conditionProgram[conditionExpr]; !ok {
+	res, ok := a.conditionProgram.Load(conditionExpr)
+	if !ok {
 		options := append(ExprOptions(), expr.AsBool())
-		// if v, ok := rowData["A"]; ok {
-		// 	options = append(options, expr.Env(v))
-		// }
 		program, err := expr.Compile(conditionExpr, options...)
 		if err != nil {
-			a.conditionProgram[conditionExpr] = err
+			a.conditionProgram.Store(conditionExpr, err)
 			return false, err
 		}
-		a.conditionProgram[conditionExpr] = program
+		res = program
+		a.conditionProgram.Store(conditionExpr, program)
 	}
 
 	if len(rowData) == 0 {
 		return false, nil
 	}
 
-	val := a.conditionProgram[conditionExpr]
-	if err, ok := val.(error); ok {
+	if err, ok := res.(error); ok {
 		return false, err
 	}
 
-	output, err := expr.Run(val.(*vm.Program), rowData)
+	output, err := expr.Run(res.(*vm.Program), rowData)
 	if err != nil {
 		return false, err
 	}
