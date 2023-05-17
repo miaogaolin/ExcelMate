@@ -8,7 +8,10 @@ import (
 	"html/template"
 	"io"
 	"math"
+	"os"
+	"os/exec"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -129,6 +132,21 @@ func (a *App) Template(data interface{}, tpl string) (string, error) {
 		return res.String(), nil
 	}
 	return "", nil
+}
+
+func (a *App) OpenDefaultApp(path string) error {
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case "windows":
+		cmd = exec.Command("cmd", "/c", path)
+	case "darwin":
+		cmd = exec.Command("open", path)
+	default:
+		return nil
+	}
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
 }
 
 func (a *App) getExcelRow(data interface{}) map[string]interface{} {

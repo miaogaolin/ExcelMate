@@ -257,7 +257,7 @@
     <!-- 编辑配置 -->
     <div class:hidden={isList}>
         <div
-            class="bg-white dark:bg-gray-900 flex items-center sticky top-0 z-50"
+            class="bg-white dark:bg-gray-900 flex items-center sticky top-0 z-50 border-b-slate-100 dark:border-b-gray-800 border-b-bg-gray-900 border-b"
         >
             <!-- svelte-ignore a11y-click-events-have-key-events -->
             {#if allConfig.current != ""}
@@ -266,7 +266,7 @@
                     on:click={(e) => selectText(e.target)}
                     on:focus={(e) => selectText(e.target)}
                     on:focusout={updateConfigName}
-                    class="text-xs p-2 font-medium bg-slate-100 dark:text-gray-400 dark:bg-gray-900 dark:border-gray-900 dark:hover:border-gray-700 dark:focus:border-gray-700 focus:outline-none border-2 border-slate-100 hover:border-slate-300 focus:border-slate-300"
+                    class="text-xs p-2 font-medium bg-slate-100 dark:text-gray-400 dark:bg-gray-800 dark:border-gray-800 dark:hover:border-gray-700 dark:focus:border-gray-700 focus:outline-none border-2 border-slate-100 hover:border-slate-300 focus:border-slate-300"
                     contenteditable="true"
                 >
                     {currentConfig.name}
@@ -307,12 +307,11 @@
         </div>
         <div class="h-2" />
         {#each currentConfig.list as r, i}
-            <div
-                style="border-left-color:{r.color}"
-                class="config-container border-l-4 overflow-hidden pr-6"
-            >
+            <div class="config-container overflow-hidden flex">
+                <!-- svelte-ignore a11y-click-events-have-key-events -->
+                <div class="w-[5px]" style="background-color:{r.color}" />
                 <div
-                    class="float-left w-full {i === outputDataIndex
+                    class="flex-1 {i === outputDataIndex
                         ? 'bg-gray-300 dark:bg-gray-600'
                         : 'bg-white dark:bg-gray-800'}"
                 >
@@ -342,7 +341,11 @@
                         </div>
                     {/if}
                 </div>
-                <div class="float-right -mr-6 w-6 text-center">
+                <div class="w-6 text-center">
+                    <span
+                        class="text-xs bg-gray-400 inline-flex text-white w-[20px] h-[20px] rounded-[50%] justify-center items-center mb-1"
+                        >{i + 1}</span
+                    >
                     <!-- svelte-ignore a11y-click-events-have-key-events -->
                     <svg
                         on:click={() => exchangePosition(i - 1, i)}
@@ -435,7 +438,7 @@
             <!-- svelte-ignore a11y-click-events-have-key-events -->
             <svg
                 on:click={addConditionAndTemplate}
-                class="hover:cursor-pointer"
+                class="hover:cursor-pointer -ml-6"
                 viewBox="0 0 1024 1024"
                 version="1.1"
                 xmlns="http://www.w3.org/2000/svg"

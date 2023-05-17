@@ -75,6 +75,7 @@ export function initExcelData() {
             excelData.set(tmp);
         }
     }).catch(e => {
+        console.log("error", e);
         DialogError(e);
     })
 }
@@ -82,7 +83,6 @@ export function initExcelData() {
 export function initConfigData() {
     ReadConfig("")
         .then(r => {
-            console.log("init config", JSON.parse(r));
             if (r != "") {
                 configData.set(JSON.parse(r));
             } else {
@@ -90,6 +90,7 @@ export function initConfigData() {
             }
         })
         .catch((e) => {
+            console.log("error", e);
             DialogError(e);
         });
 }

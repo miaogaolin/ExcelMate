@@ -77,3 +77,4 @@ func (a *App) DialogError(msg string) error {
 	})
 	return err
 }
+

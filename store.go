@@ -4,20 +4,25 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"os/user"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/extrame/xls"
 	"github.com/pkg/errors"
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"github.com/xuri/excelize/v2"
 	"golang.org/x/text/transform"
 )
 
 type StoreSettings struct {
-	ConfigFile string `json:"config_file"`
-	ExcelFile  string `json:"excel_file"`
+	ConfigFile        string `json:"config_file"`
+	ConfigFileModTime string `json:"config_file_mod_time"`
+	ExcelFile         string `json:"excel_file"`
+	ExcelFileModeTime string `json:"excel_file_mode_time"`
 }
 
 // storeConfig 与前端数据格式同步，用于验证 config 数据格式是否正确
@@ -42,15 +47,26 @@ func (a *App) ReadSettings() (*StoreSettings, error) {
 
 	b, err := os.ReadFile(path + string(filepath.Separator) + "settings.json")
 	if err != nil || len(b) == 0 {
-		a.StoreSettings.ConfigFile = path + string(filepath.Separator) + "config.json"
-		a.saveSettings()
+		// 初始化配置文件
+		configFile := path + string(filepath.Separator) + "config.json"
+		if _, err := os.Stat(configFile); err != nil {
+			err := os.WriteFile(configFile, nil, 0755)
+			if err != nil {
+				return nil, err
+			}
+		}
+		a.StoreSettings.ConfigFile = configFile
+		err := a.saveSettings()
+		if err != nil {
+			return nil, err
+		}
 		return &a.StoreSettings, nil
 	}
 
 	var setttings StoreSettings
 	err = json.Unmarshal(b, &setttings)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "unmarshal settings.json")
 	}
 
 	a.StoreSettings = setttings
@@ -64,11 +80,15 @@ func (a *App) ReadExcel(path string) ([][]string, error) {
 			return nil, err
 		}
 		path = settings.ExcelFile
+		if path == "" {
+			return nil, nil
+		}
 	}
 	file, err := os.OpenFile(path, os.O_RDONLY, 0755)
 	if err != nil {
 		return nil, err
 	}
+
 	ext := strings.ToLower(filepath.Ext(path))
 
 	switch ext {
@@ -135,6 +155,11 @@ func (a *App) SaveConfig(data string) error {
 	if err != nil {
 		return err
 	}
+
+	err = a.copyConfigHistory()
+	if err != nil {
+		runtime.LogError(a.ctx, err.Error())
+	}
 	return os.WriteFile(settings.ConfigFile, []byte(data), 0755)
 }
 
@@ -162,6 +187,36 @@ func (a *App) ReadConfig(path string) (string, error) {
 		return "", errors.Wrap(err, "Config file exception")
 	}
 	return string(b), nil
+}
+
+func (a *App) copyConfigHistory() error {
+	settings, err := a.ReadSettings()
+	if err != nil {
+		return err
+	}
+
+	srcFile, err := os.Open(settings.ConfigFile)
+	if err != nil {
+		return nil
+	}
+	defer srcFile.Close()
+
+	t := time.Now().Format("_2006-01-02_15-04")
+	u, err := user.Current()
+	if err != nil {
+		return err
+	}
+
+	dstFilename := u.HomeDir + string(filepath.Separator) + a.DataDirName + string(filepath.Separator) + "config" + t + ".json"
+
+	dstFile, err := os.OpenFile(dstFilename, os.O_CREATE|os.O_RDWR, 0755)
+	if err != nil {
+		return err
+	}
+	defer dstFile.Close()
+
+	_, err = io.Copy(dstFile, srcFile)
+	return err
 }
 
 func (a *App) createHomeDir() (string, error) {
