@@ -34,7 +34,7 @@ jobs:
           wails build -p
           echo "converting .app into a .dmg"
           npm install -g appdmg
-          appdmg dmg-spec.json ExcelMate.dmg
+          appdmg build/darwin/dmg-spec.json ExcelMate.dmg
           zip ExcelMate.zip ExcelMate.dmg
         if: matrix.os == 'macos-latest'
       - name: Build package linux
