@@ -37,23 +37,6 @@ jobs:
           appdmg build/darwin/dmg-spec.json ExcelMate.dmg
           zip ExcelMate.zip ExcelMate.dmg
         if: matrix.os == 'macos-latest'
-      - name: Build package linux
-        run: |
-          export PATH=$PATH:$(go env GOPATH)/bin
-          echo "building on ${{ matrix.os }}"
-          echo ${{ env.GITHUB_REF }}
-          echo ${{ env.GITHUB_HEAD_REF }}
-          mkdir -p ~/.wails
-          cp wails.json ~/.wails/
-          export LOG_LEVEL=debug
-          export GODEBUG=1
-          wails build
-          tar -czvf ExcelMate.tar.gz ./build/ExcelMate
-          # wget https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
-          # chmod +x linuxdeploy*.AppImage
-          # ls ./
-          # ./linuxdeploy*.AppImage --appdir AppDir --executable ./build/ExcelMate --desktop-file=ExcelMate.AppImage.desktop --icon-file=appicon--512.png --output appimage
-        if: matrix.os == 'ubuntu-latest'
       - name: Build package windows
         run: |
           $GP = (go env GOPATH)
@@ -71,12 +54,6 @@ jobs:
           name: ExcelMate-macOS
           path: ExcelMate.zip
         if: matrix.os == 'macos-latest'
-      - name: upload artifact linux
-        uses: actions/upload-artifact@v2-preview
-        with:
-          name: ExcelMate-linux
-          path: ExcelMate.tar.gz
-        if: matrix.os == 'ubuntu-latest'
       - name: upload artifact windows
         uses: actions/upload-artifact@v1
         with:
