@@ -7,7 +7,13 @@
   "frontend:dev:watcher": "npm run dev",
   "frontend:dev:serverUrl": "auto",
   "author": {
-    "name": "DESKTOP-RKMKLHA\\owner",
-    "email": "2825873215@QQ.COM"
+    "name": "Evan Miao",
+    "email": "mglluoye@gmail.com"
+  },
+  "Info": {
+    "companyName": "laomiao.site",
+    "productName": "ExcelMate",
+    "productVersion": "0.0.1",
+    "copyright": "Copyright © 2023"
   }
 }
