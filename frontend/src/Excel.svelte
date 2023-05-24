@@ -42,7 +42,7 @@
 
         for (let i = 0; i < excelData.length; i++) {
             let rowData = excelData[i].data;
-            outputResult(rowData, conf, i);
+            await outputResult(rowData, conf, i);
         }
     }
 
@@ -60,6 +60,7 @@
                         // 模板渲染数据输出
                         let output = await Template(rowData, res.template);
                         $templateError[j] = "";
+                        console.log(rowData[0]);
                         outputData.update((r) => {
                             r.list.push({
                                 config_index: j,
