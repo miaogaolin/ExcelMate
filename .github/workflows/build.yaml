@@ -1,116 +1,86 @@
-# on:
-#   push:
-#     tags:
-#       - "v*"
-# jobs:
-#   package:
-#     strategy:
-#       matrix:
-#         go-version: [1.18]
-#         os: [macos-latest, windows-latest]
-#     runs-on: ${{ matrix.os }}
-#     steps:
-#       - name: Install Go
-#         uses: actions/setup-go@v2
-#         with:
-#           go-version: ${{ matrix.go-version }}
-#       - name: Checkout code
-#         uses: actions/checkout@v2
-#       - name: Set Version
-#         run: echo "VERSION=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-#       - name: Get Wails
-#         run: go install github.com/wailsapp/wails/cmd/wails
-#       - name: Build package macOS
-#         run: |
-#           export PATH=${PATH}:`go env GOPATH`/bin
-#           echo "building on ${{ matrix.os }}"
-#           mkdir -p ~/.wails
-#           cp wails.json ~/.wails/
-#           export LOG_LEVEL=debug
-#           export GODEBUG=1
-#           wails build -p
-#           echo "converting .app into a .dmg"
-#           npm install -g appdmg
-#           appdmg build/darwin/dmg-spec.json ExcelMate.dmg
-#           zip ExcelMate.zip ExcelMate.dmg
-#         if: matrix.os == 'macos-latest'
-#       - name: Build package windows
-#         run: |
-#           $GP = (go env GOPATH)
-#           $env:path = "$env:path;$GP\bin"
-#           echo "building on ${{ matrix.os }}"
-#           New-Item -ItemType directory -Path "$HOME\.wails" -Force
-#           Copy-Item -Path "$PWD\wails.json" -Destination "$HOME\.wails\wails.json"
-#           choco install mingw
-#           wails build -p
-#           Compress-Archive -Path .\build\ExcelMate* -DestinationPath .\ExcelMate.zip
-#         if: matrix.os == 'windows-latest'
-#       - name: upload artifact macOS
-#         uses: actions/upload-artifact@v1
-#         with:
-#           name: ExcelMate-macOS
-#           path: ExcelMate.zip
-#         if: matrix.os == 'macos-latest'
-#       - name: upload artifact windows
-#         uses: actions/upload-artifact@v1
-#         with:
-#           name: ExcelMate-windows
-#           path: ExcelMate.zip
-#         if: matrix.os == 'windows-latest'
+on:
+  push:
+    tags:
+      - "v*"
+jobs:
+  package:
+    strategy:
+      matrix:
+        go-version: [1.18]
+        os: [windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go-version }}
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Set Version
+        run: echo "VERSION=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+      - name: Get Wails
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
 
-#   release:
-#     runs-on: ubuntu-latest
-#     needs: package
-#     steps:
-#       - name: Create Release
-#         id: create_release
-#         uses: actions/create-release@v1
-#         env:
-#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#         with:
-#           tag_name: ${{ github.ref }}
-#           release_name: ${{ github.ref }}
-#           draft: true
-#           prerelease: true
-#       - name: Download macOS package
-#         uses: actions/download-artifact@v1
-#         with:
-#           name: ExcelMate-macOS
-#       - name: Upload macOS package to release
-#         id: upload-macOS-release-asset
-#         uses: actions/upload-release-asset@v1
-#         env:
-#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#         with:
-#           upload_url: ${{ steps.create_release.outputs.upload_url }}
-#           asset_path: ./ExcelMate-macOS/ExcelMate.zip
-#           asset_name: ExcelMate_${{ github.ref }}_macOS.zip
-#           asset_content_type: application/octet-stream
-#       - name: Download linux package
-#         uses: actions/download-artifact@v1
-#         with:
-#           name: ExcelMate-linux
-#       - name: Upload Linux package to release
-#         id: upload-linux-release-asset
-#         uses: actions/upload-release-asset@v1
-#         env:
-#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#         with:
-#           upload_url: ${{ steps.create_release.outputs.upload_url }}
-#           asset_path: ./ExcelMate-linux/ExcelMate.tar.gz
-#           asset_name: ExcelMate_${{ github.ref }}_linux_x86_64.tar.gz
-#           asset_content_type: application/octet-stream
-#       - name: Download windows package
-#         uses: actions/download-artifact@v1
-#         with:
-#           name: ExcelMate-windows
-#       - name: Upload Windows package to release
-#         id: upload-windows-release-asset
-#         uses: actions/upload-release-asset@v1
-#         env:
-#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#         with:
-#           upload_url: ${{ steps.create_release.outputs.upload_url }}
-#           asset_path: ./ExcelMate-windows/ExcelMate.zip
-#           asset_name: ExcelMate_${{ github.ref }}_windows_x86_64.zip
-#           asset_content_type: application/octet-stream
+      # - name: Import Code-Signing Certificates
+      #   uses: Apple-Actions/import-codesign-certs@v1
+      #   with:
+      #     # The certificates in a PKCS12 file encoded as a base64 string
+      #     p12-file-base64: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_P12_BASE64 }}
+      #     # The password used to import the PKCS12 file.
+      #     p12-password: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_PASSWORD }}
+      #   if: matrix.os == 'macos-11'
+
+      # - name: Install gon via HomeBrew for code signing and app notarization
+      #   run: |
+      #     brew tap mitchellh/gon
+      #     brew install mitchellh/gon/gon
+      #   if: matrix.os == 'macos-11'
+
+      # - name: Build and Sign MacOS Binaries
+      #   env:
+      #     AC_USERNAME: ${{ secrets.AC_USERNAME }}
+      #     AC_PASSWORD: ${{ secrets.AC_PASSWORD }}
+      #   run: |
+      #     ./scripts/build-macos.sh
+      #   if: matrix.os == 'macos-11'
+      - name: Build package windows
+        run: |
+          $GP = (go env GOPATH)
+          $env:path = "$env:path;$GP\bin"
+          echo "building on ${{ matrix.os }}"
+          choco install mingw
+          wails build -platform windows/amd64 -clean
+          Compress-Archive -Path .\build\bin\ExcelMate.exe -DestinationPath .\ExcelMate-windows-amd64.zip
+        if: matrix.os == 'windows-latest'
+      - name: upload artifacts macOS-AMD64
+        uses: actions/upload-artifact@v2
+        with:
+          name: ExcelMate-macOS
+          path: ExcelMate-*.zip
+        if: matrix.os == 'macos-11'
+      - name: upload artifact windows
+        uses: actions/upload-artifact@v2
+        with:
+          name: ExcelMate-windows
+          path: ExcelMate-windows-amd64.zip
+        if: matrix.os == 'windows-latest'
+
+  release:
+    runs-on: ubuntu-latest
+    needs: package
+    steps:
+      - name: Download Windows Package
+        uses: actions/download-artifact@v2
+        with:
+          name: ExcelMate-windows
+      # - name: Download macOS packages
+      #   uses: actions/download-artifact@v2
+      #   with:
+      #     name: ExcelMate-macOS
+      - name: Create Release
+        id: create_release
+        uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          prerelease: false
+          files: ExcelMate*.zip
