@@ -141,6 +141,8 @@
             return all;
         });
 
+        allConfig.current = id;
+
         let configName = document.getElementById("ConfigName");
         if (configName) {
             configName.focus();
