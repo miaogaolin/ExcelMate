@@ -5,7 +5,6 @@ go 1.18
 require (
 	github.com/Masterminds/sprig/v3 v3.2.3
 	github.com/antonmedv/expr v1.12.5
-	github.com/djimenez/iconv-go v0.0.0-20160305225143-8960e66bd3da
 	github.com/extrame/xls v0.0.1
 	github.com/pkg/errors v0.9.1
 	github.com/wailsapp/wails/v2 v2.4.1

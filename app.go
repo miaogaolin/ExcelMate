@@ -19,7 +19,6 @@ import (
 	"github.com/Masterminds/sprig/v3"
 	"github.com/antonmedv/expr"
 	"github.com/antonmedv/expr/vm"
-	iconv "github.com/djimenez/iconv-go"
 	"github.com/pkg/errors"
 	"golang.org/x/net/html/charset"
 	"golang.org/x/text/encoding"
@@ -157,11 +156,11 @@ func (a *App) OpenDefaultApp(path string) error {
 	err := cmd.Run()
 
 	if errBuf.Len() > 0 {
-		gbkConverter, _ := iconv.NewReader(errBuf, "gbk", "utf-8")
-
-		errBuf = bytes.NewBuffer(nil)
-		_, _ = errBuf.ReadFrom(gbkConverter)
-		return errors.New(errBuf.String())
+		errBytes, err := GbkToUtf8(errBuf.Bytes())
+		if err != nil {
+			return err
+		}
+		return errors.New(string(errBytes))
 	}
 
 	return err
