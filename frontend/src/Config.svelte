@@ -141,6 +141,7 @@
             return all;
         });
 
+        currentConfig = newConfig;
         allConfig.current = id;
 
         let configName = document.getElementById("ConfigName");
