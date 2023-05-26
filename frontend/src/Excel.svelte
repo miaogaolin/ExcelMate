@@ -51,31 +51,36 @@
         for (let j = 0; j < conf.length; j++) {
             let res = conf[j];
             matchConfigIndex = -1;
+            let r = false;
             try {
                 // 验证
-                let r = await Validate(rowData, res.condition);
-                if (r) {
-                    matchConfigIndex = j;
-                    if (res.template.trim() != "") {
-                        // 模板渲染数据输出
-                        let output = await Template(rowData, res.template);
-                        $templateError[j] = "";
-                        console.log(rowData[0]);
-                        outputData.update((r) => {
-                            r.list.push({
-                                config_index: j,
-                                text: output,
-                            });
-                            return r;
-                        });
-                    }
-                    break;
-                }
+                r = await Validate(rowData, res.condition);
             } catch (e) {
-                if (e.toString().indexOf("template") !== -1) {
-                    if (!$templateError[j] || $templateError[j] == "") {
-                        $templateError[j] = e;
+                console.log("error", e);
+                continue;
+            }
+            if (r) {
+                matchConfigIndex = j;
+                if (res.template.trim() != "") {
+                    // 模板渲染数据输出
+                    let output = "";
+                    try {
+                        output = await Template(rowData, res.template);
+                    } catch (e) {
+                        if (!$templateError[j] || $templateError[j] == "") {
+                            $templateError[j] = e;
+                        }
+                        break;
                     }
+                    $templateError[j] = "";
+                    console.log(rowData[0]);
+                    outputData.update((r) => {
+                        r.list.push({
+                            config_index: j,
+                            text: output,
+                        });
+                        return r;
+                    });
                 }
                 break;
             }

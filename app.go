@@ -156,12 +156,11 @@ func (a *App) getExcelRow(data interface{}) map[string]interface{} {
 
 	rowData := make(map[string]interface{})
 	for i, v := range excelData {
-		val := fmt.Sprintf("%v", v)
+		v := strings.TrimSpace(fmt.Sprintf("%v", v))
 		key := fmt.Sprintf("%c", 'A'+i)
-		if num, err := a.getMoneyNum(val); err == nil {
+		if num, err := a.getMoneyNum(v); err == nil {
 			rowData[key] = num
 		} else {
-			v = strings.TrimSpace(val)
 			rowData[key] = v
 		}
 	}
