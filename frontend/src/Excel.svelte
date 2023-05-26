@@ -73,7 +73,6 @@
                         break;
                     }
                     $templateError[j] = "";
-                    console.log(rowData[0]);
                     outputData.update((r) => {
                         r.list.push({
                             config_index: j,
@@ -125,8 +124,13 @@
     }
 
     // 更新 excel 数据
-    function openLocalExcel() {
-        OpenDefaultApp(filename);
+    async function openLocalExcel() {
+        try {
+            await OpenDefaultApp(filename);
+        } catch (e) {
+            console.log(e);
+            DialogError(e);
+        }
     }
 
     let tooltipText = "";

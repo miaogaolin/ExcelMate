@@ -19,6 +19,7 @@ import (
 	"github.com/Masterminds/sprig/v3"
 	"github.com/antonmedv/expr"
 	"github.com/antonmedv/expr/vm"
+	iconv "github.com/djimenez/iconv-go"
 	"github.com/pkg/errors"
 	"golang.org/x/net/html/charset"
 	"golang.org/x/text/encoding"
@@ -137,15 +138,33 @@ func (a *App) OpenDefaultApp(path string) error {
 	var cmd *exec.Cmd
 	switch runtime.GOOS {
 	case "windows":
-		cmd = exec.Command("cmd", "/c", path)
+		cmd = exec.Command("cmd", "/c", "start "+path)
 	case "darwin":
 		cmd = exec.Command("open", path)
 	default:
 		return nil
 	}
+
+	errBuf := bytes.NewBuffer(nil)
 	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
+	cmd.Stderr = errBuf
+
+	// 设置环境变量 Encoding 为 GBK
+	envVars := os.Environ()
+	envVars = append(envVars, "Encoding=GBK")
+	cmd.Env = envVars
+
+	err := cmd.Run()
+
+	if errBuf.Len() > 0 {
+		gbkConverter, _ := iconv.NewReader(errBuf, "gbk", "utf-8")
+
+		errBuf = bytes.NewBuffer(nil)
+		_, _ = errBuf.ReadFrom(gbkConverter)
+		return errors.New(errBuf.String())
+	}
+
+	return err
 }
 
 func (a *App) getExcelRow(data interface{}) map[string]interface{} {
