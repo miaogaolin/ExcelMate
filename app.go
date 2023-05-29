@@ -16,7 +16,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/Masterminds/sprig/v3"
 	"github.com/antonmedv/expr"
 	"github.com/antonmedv/expr/vm"
 	"github.com/pkg/errors"
@@ -119,7 +118,7 @@ func (a *App) Template(data interface{}, tpl string) (string, error) {
 
 		res := bytes.NewBuffer(nil)
 		t, err :=
-			template.New("base").Funcs(sprig.FuncMap()).Parse(tpl)
+			template.New("base").Funcs(FuncMap()).Parse(tpl)
 		if err != nil {
 			a.templateError[tpl] = err
 			return "", errors.Wrap(err, "template")
