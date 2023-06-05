@@ -175,11 +175,7 @@ func (a *App) getExcelRow(data interface{}) map[string]interface{} {
 	for i, v := range excelData {
 		v := strings.TrimSpace(fmt.Sprintf("%v", v))
 		key := fmt.Sprintf("%c", 'A'+i)
-		if num, err := a.getMoneyNum(v); err == nil {
-			rowData[key] = num
-		} else {
-			rowData[key] = v
-		}
+		rowData[key] = v
 	}
 	return rowData
 }

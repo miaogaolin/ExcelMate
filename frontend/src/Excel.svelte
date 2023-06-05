@@ -240,7 +240,8 @@
                 >
                     <td
                         class="hover:cursor-pointer"
-                        data-tooltip={rows.config_index >= 0
+                        data-tooltip={rows.config_index >= 0 &&
+                        config.length > rows.config_index
                             ? rows.config_index +
                               1 +
                               ": " +
@@ -248,7 +249,8 @@
                             : "null"}
                         on:mouseenter={colorTooltipMouseEnter}
                         on:mouseleave={colorTooltipMouseLeave}
-                        style="background-color:{rows.config_index >= 0
+                        style="background-color:{rows.config_index >= 0 &&
+                        config.length > rows.config_index
                             ? config[rows.config_index].color
                             : 'transparent'}"><div class="w-[3px]" /></td
                     >
