@@ -211,6 +211,7 @@
 
     // 多配置文件
     function selectConfig(id) {
+        outputDataIndex = -1
         configData.saveUpdate((all) => {
             all.current = id;
             return all;
