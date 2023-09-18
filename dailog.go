@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"path/filepath"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -41,7 +42,10 @@ func (a *App) OpenExcelFile() (*excelStat, error) {
 func (a *App) OpenConfigFile() ([]string, error) {
 	dir := ""
 	if a.StoreSettings.ConfigFile != "" {
-		dir = filepath.Dir(a.StoreSettings.ConfigFile)
+		if _, err := os.Stat(a.StoreSettings.ConfigFile); err == nil {
+			dir = filepath.Dir(a.StoreSettings.ConfigFile)
+		}
+
 	}
 	path, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
 		Title: "Select config file",
@@ -77,4 +81,3 @@ func (a *App) DialogError(msg string) error {
 	})
 	return err
 }
-
